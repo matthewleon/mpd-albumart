@@ -5,7 +5,8 @@ module Lib
     ( someFunc
     ) where
 
-import Network.MPD (withMPD, currentSong, rescan)
+import Control.Concurrent (forkIO)
+import Network.MPD (Subsystem(PlayerS), withMPD, currentSong, idle)
 import SDL
 import SDL.Hint (HintPriority(OverridePriority), Hint(..), RenderScaleQuality(..), setHintWithPriority)
 import SDL.Image (load)
@@ -36,11 +37,7 @@ resizeWatch renderer texture = \ev ->
 
 someFunc :: IO ()
 someFunc = do
-  _ <- withMPD $ rescan Nothing
-  mpdResp <- withMPD currentSong
-  putStrLn $ case mpdResp of
-    Left err -> show err
-    Right song -> show song
+  _ <- forkIO mpdThread
   initializeAll
   -- when stretching album covers, use bilinear filtering
   -- default is nearest neighbor
@@ -53,6 +50,12 @@ someFunc = do
   addEventWatch $ resizeWatch renderer texture
   draw renderer texture
   appLoop
+
+mpdThread :: IO ()
+mpdThread = do
+  changedSystem <- withMPD $ idle [PlayerS]
+  putStrLn $ show changedSystem
+  mpdThread
 
 appLoop :: IO ()
 appLoop = waitEvent >>= go
