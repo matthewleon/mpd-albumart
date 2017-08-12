@@ -41,6 +41,10 @@ packages:
     git: https://github.com/matthewleon/sdl2.git
     commit: 6ff38104438ed9f19f49330acbc79d4369326576
   extra-dep: true
+- location:
+    git: https://github.com/matthewleon/libmpd-haskell.git
+    commit: 35b282cbe5973113f7e199c0f0077444dc8edc5e
+  extra-dep: true
 
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)

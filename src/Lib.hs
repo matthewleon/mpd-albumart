@@ -6,7 +6,7 @@ module Lib
     ) where
 
 import Control.Concurrent (forkIO)
-import Network.MPD (Subsystem(PlayerS), withMPD, currentSong, idle)
+import Network.MPD (Subsystem(..), withMPD, currentSong, idle)
 import SDL
 import SDL.Hint (HintPriority(OverridePriority), Hint(..), RenderScaleQuality(..), setHintWithPriority)
 import SDL.Image (load)
@@ -30,15 +30,23 @@ windowConfig = WindowConfig
   }
 
 resizeWatch :: Renderer -> Texture -> EventWatchCallback
-resizeWatch renderer texture = \ev ->
+resizeWatch renderer texture ev =
   case eventPayload ev of
     WindowSizeChangedEvent _ -> draw renderer texture
     _ -> return ()
 
 someFunc :: IO ()
 someFunc = do
-  _ <- forkIO mpdThread
   initializeAll
+  {-
+  registrationResult <- registerEvent toSystemChangeEvent fromSystemChangeEvent
+  case registrationResult of
+    Just (pushSystemChangeEvent, getSystemChangeEvent) -> do
+      -- incorporate the event here
+      _ <- forkIO mpdThread
+      return ()
+    Nothing -> die
+  -}
   -- when stretching album covers, use bilinear filtering
   -- default is nearest neighbor
   setHintWithPriority OverridePriority HintRenderScaleQuality ScaleLinear
@@ -46,15 +54,15 @@ someFunc = do
   window <- createWindow title windowConfig
   renderer <- createRenderer window (-1) defaultRenderer
   texture <- createTextureFromSurface renderer surface
-  freeSurface surface
   addEventWatch $ resizeWatch renderer texture
+  freeSurface surface
   draw renderer texture
   appLoop
 
 mpdThread :: IO ()
 mpdThread = do
-  changedSystem <- withMPD $ idle [PlayerS]
-  putStrLn $ show changedSystem
+  changedSystem <- withMPD $ idle [PlayerS, PlaylistS]
+  print changedSystem
   mpdThread
 
 appLoop :: IO ()
@@ -74,7 +82,7 @@ draw :: Renderer -> Texture -> IO ()
 draw renderer texture = do
   textureInfo <- queryTexture texture
   viewPort <- get $ rendererViewport renderer
-  putStrLn $ show viewPort
+  print viewPort
   case viewPort of
     Just (Rectangle _ viewSize) -> do
       let texSize = V2 (textureWidth textureInfo) (textureHeight textureInfo)
