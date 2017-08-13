@@ -16,12 +16,14 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Lib
+                     , Music.MPD.AlbumArt.Event.SystemChange
   build-depends:       base >= 4.7 && < 5
                      , libmpd
                      , sdl2
                      , sdl2-image
                      , text
                      , containers
+                     , safe-exceptions
   default-language:    Haskell2010
 
 executable mpd-albumart-exe

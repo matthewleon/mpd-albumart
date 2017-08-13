@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 
@@ -6,12 +7,18 @@ module Lib
     ) where
 
 import Control.Concurrent (forkIO)
+import Control.Exception.Safe (throwString)
+import Control.Monad (void)
 import Network.MPD (Subsystem(..), withMPD, currentSong, idle)
 import SDL
 import SDL.Hint (HintPriority(OverridePriority), Hint(..), RenderScaleQuality(..), setHintWithPriority)
 import SDL.Image (load)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Foreign.C (CInt)
+
+import Music.MPD.AlbumArt.Event.SystemChange (SystemChangeEvent)
+import qualified Music.MPD.AlbumArt.Event.SystemChange as SystemChange
 
 title :: Text
 -- TODO: change
@@ -36,46 +43,47 @@ resizeWatch renderer texture ev =
     _ -> return ()
 
 someFunc :: IO ()
-someFunc = do
-  initializeAll
-  {-
-  registrationResult <- registerEvent toSystemChangeEvent fromSystemChangeEvent
-  case registrationResult of
-    Just (pushSystemChangeEvent, getSystemChangeEvent) -> do
-      -- incorporate the event here
-      _ <- forkIO mpdThread
-      return ()
-    Nothing -> die
-  -}
-  -- when stretching album covers, use bilinear filtering
-  -- default is nearest neighbor
-  setHintWithPriority OverridePriority HintRenderScaleQuality ScaleLinear
-  surface <- load "hosono.jpg"
-  window <- createWindow title windowConfig
-  renderer <- createRenderer window (-1) defaultRenderer
-  texture <- createTextureFromSurface renderer surface
-  addEventWatch $ resizeWatch renderer texture
-  freeSurface surface
-  draw renderer texture
-  appLoop
+someFunc = initializeAll >> SystemChange.register >>= \case
+    Nothing -> throwString "Unable to register user event with SDL."
+    Just (RegisteredEventType pushSystemChangeEvent getSystemChangeEvent) -> do
+      void . forkIO $ mpdThread pushSystemChangeEvent
+      -- when stretching album covers, use bilinear filtering
+      -- default is nearest neighbor
+      setHintWithPriority OverridePriority HintRenderScaleQuality ScaleLinear
+      surface <- load "hosono.jpg"
+      window <- createWindow title windowConfig
+      renderer <- createRenderer window (-1) defaultRenderer
+      texture <- createTextureFromSurface renderer surface
+      addEventWatch $ resizeWatch renderer texture
+      freeSurface surface
+      draw renderer texture
+      appLoop getSystemChangeEvent
 
-mpdThread :: IO ()
-mpdThread = do
-  changedSystem <- withMPD $ idle [PlayerS, PlaylistS]
-  print changedSystem
-  mpdThread
+mpdThread :: (SystemChangeEvent -> IO EventPushResult) -> IO ()
+mpdThread push = go
+  where
+  go = withMPD (idle [PlayerS, PlaylistS]) >>= \case
+    Left err -> throwString $ show err
+    Right changedSystems ->
+      push (SystemChange.fromList changedSystems) >>= \case
+        EventPushSuccess -> go
+        EventPushFiltered -> throwString "System change event filtered."
+        EventPushFailure s -> throwString $ T.unpack s
 
-appLoop :: IO ()
-appLoop = waitEvent >>= go
+appLoop :: (Event -> IO (Maybe SystemChangeEvent)) -> IO ()
+appLoop getSystemChangeEvent = waitEvent >>= go
   where
   go :: Event -> IO ()
-  go ev =
-    case eventPayload ev of
-       KeyboardEvent keyboardEvent
-         |  keyboardEventKeyMotion keyboardEvent == Pressed &&
-            keysymKeycode (keyboardEventKeysym keyboardEvent) == KeycodeQ
-         -> return ()
-       _ -> waitEvent >>= go
+  go ev = case eventPayload ev of
+     KeyboardEvent keyboardEvent
+       |  keyboardEventKeyMotion keyboardEvent == Pressed &&
+          keysymKeycode (keyboardEventKeysym keyboardEvent) == KeycodeQ
+       -> return ()
+     _ -> do
+      getSystemChangeEvent ev >>= \case
+        Just systemChangeEvent -> print systemChangeEvent
+        Nothing -> return ()
+      waitEvent >>= go
     --rendererDrawColor renderer $= V4 0 0 255 255
 
 draw :: Renderer -> Texture -> IO ()

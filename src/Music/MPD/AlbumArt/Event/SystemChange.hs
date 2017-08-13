@@ -1,6 +1,10 @@
 module Music.MPD.AlbumArt.Event.SystemChange (
-  SystemChangeEvent(..)
-, registerSystemChangeEvent
+  SystemChangeEvent
+, fromSet
+, fromList
+, toSet
+, toList
+, register
 ) where
 
 import Data.Bits (Bits(..))
@@ -13,31 +17,44 @@ import SDL.Event (RegisteredEventData(registeredEventCode), RegisteredEventType,
 newtype SystemChangeEvent = SystemChangeEvent (Set Subsystem)
   deriving (Show)
 
-eventCode :: Bits a => SystemChangeEvent -> a
-eventCode (SystemChangeEvent ss) =
-  foldl' (\i s -> setBit i $ fromEnum s) zeroBits ss
+fromSet :: Set Subsystem -> SystemChangeEvent
+fromSet = SystemChangeEvent
 
-fromCode :: Bits a => a -> SystemChangeEvent
-fromCode bits = SystemChangeEvent $
-  foldl' addSystemFromBits Set.empty allSubsystems
-  where
-  allSubsystems = enumFrom minBound
-  addSystemFromBits ss s =
-    if testBit bits $ fromEnum s
-    then Set.insert s ss
-    else ss
+fromList :: [Subsystem] -> SystemChangeEvent
+fromList = fromSet . Set.fromList
 
-toSystemChangeEvent
-  :: RegisteredEventData
-  -> Timestamp
-  -> IO (Maybe SystemChangeEvent)
-toSystemChangeEvent d _ = return . Just . fromCode $ registeredEventCode d
+toSet :: SystemChangeEvent -> Set Subsystem
+toSet (SystemChangeEvent ss) = ss
 
-fromSystemChangeEvent :: SystemChangeEvent -> RegisteredEventData
-fromSystemChangeEvent e = emptyRegisteredEvent {
-  registeredEventCode = eventCode e
-}
+toList :: SystemChangeEvent -> [Subsystem]
+toList = Set.toList . toSet
 
-registerSystemChangeEvent :: IO (Maybe (RegisteredEventType SystemChangeEvent))
-registerSystemChangeEvent =
+register :: IO (Maybe (RegisteredEventType SystemChangeEvent))
+register =
   registerEvent toSystemChangeEvent (return . fromSystemChangeEvent)
+  where
+
+  toSystemChangeEvent
+    :: RegisteredEventData
+    -> Timestamp
+    -> IO (Maybe SystemChangeEvent)
+  toSystemChangeEvent d _ = return . Just . fromCode $ registeredEventCode d
+    where
+    fromCode :: Bits a => a -> SystemChangeEvent
+    fromCode bits = SystemChangeEvent $
+      foldl' addSystemFromBits Set.empty allSubsystems
+      where
+      allSubsystems = enumFrom minBound
+      addSystemFromBits ss s =
+        if testBit bits $ fromEnum s
+        then Set.insert s ss
+        else ss
+
+  fromSystemChangeEvent :: SystemChangeEvent -> RegisteredEventData
+  fromSystemChangeEvent e = emptyRegisteredEvent {
+    registeredEventCode = eventCode e
+  }
+    where
+    eventCode :: Bits a => SystemChangeEvent -> a
+    eventCode (SystemChangeEvent ss) =
+      foldl' (\i s -> setBit i $ fromEnum s) zeroBits ss
