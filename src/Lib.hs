@@ -7,9 +7,10 @@ module Lib
     ) where
 
 import Control.Concurrent (forkIO)
-import Control.Exception.Safe (throwString)
+import Control.Exception.Safe (throw, throwString)
 import Control.Monad (void)
-import Network.MPD (Subsystem(..), withMPD, currentSong, idle)
+import Data.Either (either)
+import Network.MPD (MPD, Subsystem(..), withMPD, currentSong, idle, playlistInfo)
 import SDL
 import SDL.Hint (HintPriority(OverridePriority), Hint(..), RenderScaleQuality(..), setHintWithPriority)
 import SDL.Image (load)
@@ -62,13 +63,11 @@ someFunc = initializeAll >> SystemChange.register >>= \case
 mpdThread :: (SystemChangeEvent -> IO EventPushResult) -> IO ()
 mpdThread push = go
   where
-  go = withMPD (idle [PlayerS, PlaylistS]) >>= \case
-    Left err -> throwString $ show err
-    Right changedSystems ->
-      push (SystemChange.fromList changedSystems) >>= \case
-        EventPushSuccess -> go
-        EventPushFiltered -> throwString "System change event filtered."
-        EventPushFailure s -> throwString $ T.unpack s
+  go = SystemChange.fromList <$> withMPD' (idle [PlayerS, PlaylistS])
+    >>= push >>= \case
+      EventPushSuccess -> go
+      EventPushFiltered -> throwString "System change event filtered."
+      EventPushFailure s -> throwString $ T.unpack s
 
 appLoop :: (Event -> IO (Maybe SystemChangeEvent)) -> IO ()
 appLoop getSystemChangeEvent = waitEvent >>= go
@@ -81,10 +80,12 @@ appLoop getSystemChangeEvent = waitEvent >>= go
        -> return ()
      _ -> do
       getSystemChangeEvent ev >>= \case
-        Just systemChangeEvent -> print systemChangeEvent
+        Just systemChangeEvent -> update
         Nothing -> return ()
       waitEvent >>= go
-    --rendererDrawColor renderer $= V4 0 0 255 255
+
+update :: IO ()
+update = print =<< withMPD' (playlistInfo Nothing)
 
 draw :: Renderer -> Texture -> IO ()
 draw renderer texture = do
@@ -116,3 +117,6 @@ centerOrigin (V2 smallerw smallerh) (V2 largerw largerh) =
   let newX = (largerw - smallerw) `div` 2
       newY = (largerh - smallerh) `div` 2
   in  P $ V2 newX newY
+
+withMPD' :: MPD a -> IO a
+withMPD' m = withMPD m >>= either throw return
