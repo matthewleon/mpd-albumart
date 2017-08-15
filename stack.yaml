@@ -47,7 +47,7 @@ packages:
   extra-dep: true
 - location:
     git: https://github.com/matthewleon/haskell-musicbrainz-client.git
-    commit: 4c26042d678f14c0226d6c662886abb91381e95c
+    commit: 4c103759db27d19515b48045a0e822afa0599da2
   extra-dep: true
 
 # Dependency packages to be pulled from upstream that are not in the resolver
