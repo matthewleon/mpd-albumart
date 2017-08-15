@@ -9,16 +9,17 @@ import Data.Map as Map
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Network.MPD (Song(sgTags), Metadata(..), toText)
+import Network.Protocol.MusicBrainz.Types (MBID)
 import Network.Protocol.MusicBrainz.XML2.WebService (searchReleasesByArtistAndRelease)
 import Safe (headMay)
 
-search :: MonadIO m => Text -> Text -> m [(Int, Text)]
+search :: MonadIO m => Text -> Text -> m [(Int, MBID)]
 search artist release = liftIO $
   searchReleasesByArtistAndRelease userAgent artist release Nothing Nothing
   where userAgent = "mpd-albumart/dev (ml@matthewleon.com)"
 
 -- TODO: refine errors
-searchSong :: MonadIO m => Song -> m [(Int, Text)]
+searchSong :: MonadIO m => Song -> m [(Int, MBID)]
 searchSong song = fromMaybe (return []) $
   search <$> (maybeAlbumArtist <|> maybeArtist) <*> maybeAlbum
   where
