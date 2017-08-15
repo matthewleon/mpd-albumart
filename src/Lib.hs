@@ -8,9 +8,12 @@ module Lib
 
 import Control.Concurrent (forkIO)
 import Control.Exception.Safe (throw, throwString)
-import Control.Monad (void)
+import Control.Monad (void, (<=<))
+import Control.Monad.IO.Class (MonadIO)
 import Data.Either (either)
-import Network.MPD (MPD, Subsystem(..), withMPD, currentSong, idle, playlistInfo)
+import Data.Maybe (maybe)
+import Music.MusicBrainz (searchSong)
+import Network.MPD (MPD, Song(sgTags), Subsystem(..), withMPD, currentSong, idle, playlistInfo)
 import SDL
 import SDL.Hint (HintPriority(OverridePriority), Hint(..), RenderScaleQuality(..), setHintWithPriority)
 import SDL.Image (load)
@@ -85,7 +88,11 @@ appLoop getSystemChangeEvent = waitEvent >>= go
       waitEvent >>= go
 
 update :: IO ()
-update = print =<< withMPD' (playlistInfo Nothing)
+update =
+  --print =<< withMPD' (playlistInfo Nothing)
+  withMPD' currentSong >>= maybe
+    (putStrLn "no current song")
+    (print <=< searchSong)
 
 draw :: Renderer -> Texture -> IO ()
 draw renderer texture = do

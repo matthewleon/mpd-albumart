@@ -45,6 +45,10 @@ packages:
     git: https://github.com/matthewleon/libmpd-haskell.git
     commit: 35b282cbe5973113f7e199c0f0077444dc8edc5e
   extra-dep: true
+- location:
+    git: https://github.com/matthewleon/haskell-musicbrainz-client.git
+    commit: 56fe4b3a24616f2e20378744e4bfe90a15f7756e
+  extra-dep: true
 
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
