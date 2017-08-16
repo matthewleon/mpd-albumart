@@ -18,9 +18,12 @@ search artist release = liftIO $
   searchReleasesByArtistAndRelease userAgent artist release Nothing Nothing
   where userAgent = "mpd-albumart/dev (ml@matthewleon.com)"
 
+searchSong :: MonadIO m => Song -> m (Maybe MBID)
+searchSong = fmap (fmap snd . headMay) . searchSong'
+
 -- TODO: refine errors
-searchSong :: MonadIO m => Song -> m [(Int, MBID)]
-searchSong song = fromMaybe (return []) $
+searchSong' :: MonadIO m => Song -> m [(Int, MBID)]
+searchSong' song = fromMaybe (return []) $
   search <$> (maybeAlbumArtist <|> maybeArtist) <*> maybeAlbum
   where
     tags = sgTags song
