@@ -9,8 +9,8 @@ import Data.Map as Map
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Network.MPD (Song(sgTags), Metadata(..), toText)
-import Network.Protocol.MusicBrainz.Types (MBID)
-import Network.Protocol.MusicBrainz.XML2.WebService (searchReleasesByArtistAndRelease)
+import Music.MusicBrainz.Types (MBID)
+import Music.MusicBrainz.WebService (searchReleasesByArtistAndRelease)
 import Safe (headMay)
 
 search :: MonadIO m => Text -> Text -> m [(Int, MBID)]
