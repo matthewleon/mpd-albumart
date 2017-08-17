@@ -18,13 +18,13 @@ import Music.MusicBrainz (searchSong)
 import Network.MPD (MPD, Song(sgTags), Subsystem(..), withMPD, currentSong, idle, playlistInfo)
 import SDL
 import SDL.Hint (HintPriority(OverridePriority), Hint(..), RenderScaleQuality(..), setHintWithPriority)
-import SDL.Image (load)
+import SDL.Image (loadTexture, decodeTexture)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Foreign.C (CInt)
 
 import qualified CoverArtArchive as CAA
-import CoverArtArchive.Types (JPEG)
+import CoverArtArchive.Types (JPEG(JPEG))
 import Music.MPD.AlbumArt.Event.SystemChange (SystemChangeEvent)
 import qualified Music.MPD.AlbumArt.Event.SystemChange as SystemChange
 
@@ -58,14 +58,12 @@ someFunc = initializeAll >> SystemChange.register >>= \case
       -- when stretching album covers, use bilinear filtering
       -- default is nearest neighbor
       setHintWithPriority OverridePriority HintRenderScaleQuality ScaleLinear
-      surface <- load "hosono.jpg"
       window <- createWindow title windowConfig
       renderer <- createRenderer window (-1) defaultRenderer
-      texture <- createTextureFromSurface renderer surface
+      texture <- loadTexture renderer "hosono.jpg"
       addEventWatch $ resizeWatch renderer texture
-      freeSurface surface
       draw renderer texture
-      appLoop getSystemChangeEvent
+      appLoop renderer getSystemChangeEvent
 
 mpdThread :: (SystemChangeEvent -> IO EventPushResult) -> IO ()
 mpdThread push = go
@@ -76,8 +74,8 @@ mpdThread push = go
       EventPushFiltered -> throwString "System change event filtered."
       EventPushFailure s -> throwString $ T.unpack s
 
-appLoop :: (Event -> IO (Maybe SystemChangeEvent)) -> IO ()
-appLoop getSystemChangeEvent = waitEvent >>= go
+appLoop :: Renderer -> (Event -> IO (Maybe SystemChangeEvent)) -> IO ()
+appLoop renderer getSystemChangeEvent = waitEvent >>= go
   where
   go :: Event -> IO ()
   go ev = case eventPayload ev of
@@ -87,12 +85,18 @@ appLoop getSystemChangeEvent = waitEvent >>= go
        -> return ()
      _ -> do
       getSystemChangeEvent ev >>= \case
-        Just systemChangeEvent -> print =<< update
+        Just systemChangeEvent -> update renderer
         Nothing -> return ()
       waitEvent >>= go
 
-update :: IO JPEG
-update = do
+update :: Renderer -> IO ()
+update renderer = do
+  JPEG coverJpeg <- getCover
+  texture <- decodeTexture renderer coverJpeg
+  draw renderer texture
+
+getCover :: IO JPEG
+getCover = do
   song <- throwOnNothing "no current song" =<< withMPD' currentSong
   mbid <- throwOnNothing "unable to find mbid for song" =<< searchSong song
   throwOnLeft "unable to get album art for mbid" =<< CAA.getFront mbid

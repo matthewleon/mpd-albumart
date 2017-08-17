@@ -11,7 +11,7 @@ module CoverArtArchive.Types
     , EditID
     , FileID
     , APIURI
-    , JPEG
+    , JPEG(JPEG)
     , JPEGContent
     ) where
 
