@@ -14,6 +14,7 @@ data ListingError = ListingInvalidMbid
                   | ListingInvalidMethod
                   | ListingNoResponseForAcceptHeader
                   | ListingRateLimitExceeded
+  deriving (Eq, Show)
 
 statusCodeToListingError :: Int -> Maybe ListingError
 statusCodeToListingError 400 = Just ListingInvalidMbid
@@ -27,6 +28,7 @@ data ImageError = ImageInvalidMbid
                 | ImageNoReleaseOrNoImage
                 | ImageInvalidMethod
                 | ImageRateLimitExceeded
+  deriving (Eq, Show)
 
 statusCodeToImageError :: Int -> Maybe ImageError
 statusCodeToImageError 400 = Just ImageInvalidMbid
@@ -36,6 +38,7 @@ statusCodeToImageError 503 = Just ImageRateLimitExceeded
 statusCodeToImageError _   = Nothing
 
 data QueryError a = QueryError (Maybe a) ServantError
+  deriving (Eq, Show)
 
 mkListingQueryError :: ServantError -> QueryError ListingError
 mkListingQueryError err@(FailureResponse _ status _ _)
