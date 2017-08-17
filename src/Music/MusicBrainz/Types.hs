@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Music.MusicBrainz.Types (
   MBID
 , fromUUID
@@ -9,11 +11,12 @@ module Music.MusicBrainz.Types (
 ) where
 
 import Data.Text (Text)
-import Data.UUID (UUID)
-import qualified Data.UUID as UUID
+import Data.UUID.Types (UUID)
+import qualified Data.UUID.Types as UUID
+import Servant.API (ToHttpApiData)
 
 newtype MBID = MBID UUID
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, ToHttpApiData)
 
 fromUUID :: UUID -> MBID
 fromUUID = MBID

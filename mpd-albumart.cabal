@@ -16,26 +16,33 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Lib
+                     , CoverArtArchive
                      , Music.MusicBrainz
                      , Music.MusicBrainz.Types
                      , Music.MusicBrainz.WebService
                      , Music.MPD.AlbumArt.Event.SystemChange
   build-depends:       base >= 4.7 && < 5
+                     , aeson
                      , bytestring
                      , conduit
                      , conduit-extra
+                     , http-client-tls
                      , http-conduit
+                     , http-media
                      , http-types
                      , libmpd
                      , monad-control
+                     , network-uri
                      , resourcet
                      , sdl2
                      , sdl2-image
+                     , servant
+                     , servant-client
                      , text
                      , containers
                      , safe
                      , safe-exceptions
-                     , uuid
+                     , uuid-types
                      , xml-conduit
                      , xml-types
                      , HTTP
