@@ -16,7 +16,10 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Lib
-                     , CoverArtArchive
+  other-modules:       CoverArtArchive
+                     , CoverArtArchive.Errors
+                     , CoverArtArchive.Internal
+                     , CoverArtArchive.Types
                      , Music.MusicBrainz
                      , Music.MusicBrainz.Types
                      , Music.MusicBrainz.WebService

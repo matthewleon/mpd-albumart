@@ -12,6 +12,7 @@ import Control.Monad (void, (<=<))
 import Control.Monad.IO.Class (MonadIO)
 import Data.Either (either)
 import Data.Maybe (maybe)
+import Data.Monoid ((<>))
 import Music.MusicBrainz (searchSong)
 import Network.MPD (MPD, Song(sgTags), Subsystem(..), withMPD, currentSong, idle, playlistInfo)
 import SDL
@@ -21,6 +22,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Foreign.C (CInt)
 
+import qualified CoverArtArchive as CAA
 import Music.MPD.AlbumArt.Event.SystemChange (SystemChangeEvent)
 import qualified Music.MPD.AlbumArt.Event.SystemChange as SystemChange
 
@@ -87,12 +89,17 @@ appLoop getSystemChangeEvent = waitEvent >>= go
         Nothing -> return ()
       waitEvent >>= go
 
+-- TODO: monadify
 update :: IO ()
 update =
   --print =<< withMPD' (playlistInfo Nothing)
-  withMPD' currentSong >>= maybe
-    (putStrLn "no current song")
-    (print <=< searchSong)
+  withMPD' currentSong >>= \case
+    Nothing -> putStrLn "no current song"
+    Just song -> searchSong song >>= \case
+      Nothing -> putStrLn $ "unable to find mbid for song: " <> show song
+      Just mbid -> CAA.getFront mbid >>= \case
+        Left _ -> putStrLn $ "unable to find album art for mbid: " <> show mbid
+        Right jpeg -> print jpeg
 
 draw :: Renderer -> Texture -> IO ()
 draw renderer texture = do
