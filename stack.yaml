@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-9.0
+resolver: nightly-2017-08-17
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -37,10 +37,6 @@ resolver: lts-9.0
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - '.'
-- location:
-    git: https://github.com/matthewleon/sdl2.git
-    commit: 6ff38104438ed9f19f49330acbc79d4369326576
-  extra-dep: true
 - location:
     git: https://github.com/matthewleon/libmpd-haskell.git
     commit: 35b282cbe5973113f7e199c0f0077444dc8edc5e
