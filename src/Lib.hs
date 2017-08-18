@@ -42,6 +42,7 @@ windowConfig = WindowConfig
   , windowPosition     = Wherever
   , windowResizable    = True
   , windowInitialSize  = V2 800 600
+  , windowVisible      = True
   }
 
 resizeWatch :: Renderer -> Texture -> EventWatchCallback
