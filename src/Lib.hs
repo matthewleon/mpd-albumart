@@ -61,9 +61,9 @@ someFunc = initializeAll >> SystemChange.register >>= \case
       setHintWithPriority OverridePriority HintRenderScaleQuality ScaleLinear
       window <- createWindow title windowConfig
       renderer <- createRenderer window (-1) defaultRenderer
-      texture <- loadTexture renderer "hosono.jpg"
-      addEventWatch $ resizeWatch renderer texture
-      draw renderer texture
+      -- TODO: move add/remove of resizeWatch into update code
+      --addEventWatch $ resizeWatch renderer texture
+      update renderer
       appLoop renderer getSystemChangeEvent
 
 mpdThread :: (SystemChangeEvent -> IO EventPushResult) -> IO ()
