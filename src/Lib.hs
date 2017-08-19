@@ -108,9 +108,7 @@ getCover = do
 draw :: Renderer -> Texture -> IO ()
 draw renderer texture = do
   textureInfo <- queryTexture texture
-  viewPort <- get $ rendererViewport renderer
-  print viewPort
-  case viewPort of
+  get (rendererViewport renderer) >>= \case
     Just (Rectangle _ viewSize) -> do
       let texSize = V2 (textureWidth textureInfo) (textureHeight textureInfo)
           stretchedSize = scaleProportionally texSize viewSize
