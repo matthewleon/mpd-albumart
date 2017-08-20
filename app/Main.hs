@@ -19,6 +19,7 @@ import Music.MPD.AlbumArt.Event.SystemChange (SystemChangeEvent)
 import qualified Music.MPD.AlbumArt.Event.SystemChange as SystemChange
 
 import Logging (LogLevel(Debug), setLogLevel, info, debug)
+import Prelude (String)
 import Protolude hiding (get)
 
 title :: Text
@@ -45,7 +46,10 @@ resizeWatch renderer texture ev =
     _ -> return ()
 
 main :: IO ()
-main = setLogLevel Debug >> info "starting" >> getCover >>= initSystems
+main = do
+  setLogLevel Debug
+  info "starting"
+  getCurrentSongCover >>= initSystems
 
 initSystems :: JPEG -> IO ()
 initSystems initJpeg =
@@ -82,7 +86,7 @@ appLoop renderer watch getSystemChangeEvent = waitEvent >>= go watch
      _ ->
       getSystemChangeEvent ev >>= \case
         Just systemChangeEvent -> do
-          watch' <- update renderer (Just watch) =<< getCover
+          watch' <- update renderer (Just watch) =<< getCurrentSongCover
           waitEvent >>= go watch'
         Nothing -> waitEvent >>= go watch
 
@@ -93,11 +97,18 @@ update renderer maybeWatch (JPEG cover) = do
   maybe (pure ()) delEventWatch maybeWatch
   addEventWatch $ resizeWatch renderer texture
 
-getCover :: IO JPEG
-getCover = do
+getCurrentSongCover :: IO JPEG
+getCurrentSongCover = getCurrentSong >>= getCover
+
+getCurrentSong :: IO Song
+getCurrentSong = do
   debug "querying mpd for current song"
   song <- throwOnNothing "no current song" =<< withMPD' currentSong
   debug $ "current song: " <> show song
+  pure song
+
+getCover :: Song -> IO JPEG
+getCover song = do
   debug "fetching mbid"
   mbid <- throwOnNothing "unable to find mbid for song" =<< searchSong song
   debug $ "mbid: " <> show mbid
@@ -106,8 +117,7 @@ getCover = do
   debug "fetched art"
   pure jpeg
   where
-    throwOnNothing str = maybe (throwString str) return
-    throwOnLeft str = either (const $ throwString str) return
+  throwOnLeft str = either (const $ throwString str) return
 
 draw :: Renderer -> Texture -> IO ()
 draw renderer texture = do
@@ -140,3 +150,6 @@ centerOrigin (V2 smallerw smallerh) (V2 largerw largerh) =
 
 withMPD' :: MPD a -> IO a
 withMPD' m = withMPD m >>= either throw return
+
+throwOnNothing :: String -> Maybe a -> IO a
+throwOnNothing str = maybe (throwString str) return
