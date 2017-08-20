@@ -50,7 +50,11 @@ resizeWatch renderer texture ev =
     _ -> return ()
 
 main :: IO ()
-main = initializeAll >> SystemChange.register >>= \case
+main = getCover >>= initSystems
+
+initSystems :: JPEG -> IO ()
+initSystems initJpeg =
+  initializeAll >> SystemChange.register >>= \case
     Nothing -> throwString "Unable to register user event with SDL."
     Just (RegisteredEventType pushSystemChangeEvent getSystemChangeEvent) -> do
       void . forkIO $ mpdThread pushSystemChangeEvent
@@ -59,7 +63,7 @@ main = initializeAll >> SystemChange.register >>= \case
       setHintWithPriority OverridePriority HintRenderScaleQuality ScaleLinear
       window <- createWindow title windowConfig
       renderer <- createRenderer window (-1) defaultRenderer
-      watch <- update renderer Nothing
+      watch <- update renderer Nothing initJpeg
       appLoop renderer watch getSystemChangeEvent
 
 mpdThread :: (SystemChangeEvent -> IO EventPushResult) -> IO ()
@@ -83,14 +87,13 @@ appLoop renderer watch getSystemChangeEvent = waitEvent >>= go watch
      _ ->
       getSystemChangeEvent ev >>= \case
         Just systemChangeEvent -> do
-          watch' <- update renderer (Just watch)
+          watch' <- update renderer (Just watch) =<< getCover
           waitEvent >>= go watch'
         Nothing -> waitEvent >>= go watch
 
-update :: Renderer -> Maybe EventWatch -> IO EventWatch
-update renderer maybeWatch = do
-  JPEG coverJpeg <- getCover
-  texture <- decodeTexture renderer coverJpeg
+update :: Renderer -> Maybe EventWatch -> JPEG -> IO EventWatch
+update renderer maybeWatch (JPEG cover) = do
+  texture <- decodeTexture renderer cover
   draw renderer texture
   maybe (pure ()) delEventWatch maybeWatch
   addEventWatch $ resizeWatch renderer texture
