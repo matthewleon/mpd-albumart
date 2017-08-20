@@ -7,7 +7,7 @@ module Main (main) where
 import Control.Exception.Safe (throw, throwString)
 import Music.MusicBrainz (searchSong)
 import Network.MPD (MPD, Song(sgTags), Subsystem(..), withMPD, currentSong, idle, playlistInfo)
-import SDL
+import SDL hiding (Debug)
 import SDL.Hint (HintPriority(OverridePriority), Hint(..), RenderScaleQuality(..), setHintWithPriority)
 import SDL.Image (loadTexture, decodeTexture)
 import qualified Data.Text as T
@@ -18,6 +18,7 @@ import CoverArtArchive.Types (JPEG(JPEG))
 import Music.MPD.AlbumArt.Event.SystemChange (SystemChangeEvent)
 import qualified Music.MPD.AlbumArt.Event.SystemChange as SystemChange
 
+import Logging (LogLevel(Debug), setLogLevel, info)
 import Protolude hiding (get)
 
 title :: Text
@@ -44,7 +45,7 @@ resizeWatch renderer texture ev =
     _ -> return ()
 
 main :: IO ()
-main = getCover >>= initSystems
+main = setLogLevel Debug >> info "starting" >> getCover >>= initSystems
 
 initSystems :: JPEG -> IO ()
 initSystems initJpeg =
@@ -94,9 +95,16 @@ update renderer maybeWatch (JPEG cover) = do
 
 getCover :: IO JPEG
 getCover = do
+  info "querying mpd for current song"
   song <- throwOnNothing "no current song" =<< withMPD' currentSong
+  info $ "current song: " <> show song
+  info "fetching mbid"
   mbid <- throwOnNothing "unable to find mbid for song" =<< searchSong song
-  throwOnLeft "unable to get album art for mbid" =<< CAA.getFront mbid
+  info $ "mbid: " <> show mbid
+  info "fetching art"
+  jpeg <- throwOnLeft "unable to get album art for mbid" =<< CAA.getFront mbid
+  info "fetched art"
+  pure jpeg
   where
     throwOnNothing str = maybe (throwString str) return
     throwOnLeft str = either (const $ throwString str) return

@@ -1,4 +1,4 @@
-module Logging (LogLevel, setLogLevel, info, debug, log) where
+module Logging (LogLevel(..), setLogLevel, info, debug, log) where
 
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
 import Protolude hiding (log)
