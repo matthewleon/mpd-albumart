@@ -24,6 +24,7 @@ import Network.HTTP.Media.MediaType ((//))
 import GHC.Generics
 import Network.URI (URI, parseAbsoluteURI)
 import Servant.API (ToHttpApiData, Accept(..), MimeUnrender(..))
+import Protolude
 
 data Listing = Listing
   { release :: APIURI

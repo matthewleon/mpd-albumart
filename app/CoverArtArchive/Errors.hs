@@ -8,6 +8,7 @@ module CoverArtArchive.Errors
 
 import Servant.Client (ServantError(..))
 import Network.HTTP.Types (statusCode)
+import Protolude
 
 data ListingError = ListingInvalidMbid
                   | ListingNoRelease

@@ -22,6 +22,9 @@ import Text.XML.Stream.Parse (XmlException(XmlException), parseBytes, def, tag',
 
 import qualified Music.MusicBrainz.Types as MB
 
+import Protolude hiding (force, many)
+import Prelude (String)
+
 musicBrainzWSSearch :: MonadIO m => Text -> Text -> Text -> Maybe Int -> Maybe Int -> m BL.ByteString
 musicBrainzWSSearch agent reqtype query mlimit moffset = do
     let url = "https://musicbrainz.org/ws/2/" ++ T.unpack reqtype ++ "/?query=" ++ urlEncode (T.unpack query) ++ limit mlimit ++ offset moffset

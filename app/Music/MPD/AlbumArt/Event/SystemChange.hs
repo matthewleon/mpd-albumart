@@ -8,11 +8,10 @@ module Music.MPD.AlbumArt.Event.SystemChange (
 ) where
 
 import Data.Bits (Bits(..))
-import Data.Foldable (foldl')
-import Data.Set (Set)
 import qualified Data.Set as Set
 import Network.MPD (Subsystem, withMPD, currentSong, idle)
 import SDL.Event (RegisteredEventData(registeredEventCode), RegisteredEventType, Timestamp, registerEvent, emptyRegisteredEvent)
+import Protolude hiding (toList)
 
 newtype SystemChangeEvent = SystemChangeEvent (Set Subsystem)
   deriving (Show)

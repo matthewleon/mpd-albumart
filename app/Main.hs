@@ -4,20 +4,12 @@
 
 module Main (main) where
 
-import Control.Concurrent (forkIO)
 import Control.Exception.Safe (throw, throwString)
-import Control.Monad (void, (<=<))
-import Control.Monad.IO.Class (MonadIO)
-import qualified Data.Bifunctor as Bifunctor
-import Data.Either (either)
-import Data.Maybe (maybe, fromMaybe)
-import Data.Monoid ((<>))
 import Music.MusicBrainz (searchSong)
 import Network.MPD (MPD, Song(sgTags), Subsystem(..), withMPD, currentSong, idle, playlistInfo)
 import SDL
 import SDL.Hint (HintPriority(OverridePriority), Hint(..), RenderScaleQuality(..), setHintWithPriority)
 import SDL.Image (loadTexture, decodeTexture)
-import Data.Text (Text)
 import qualified Data.Text as T
 import Foreign.C (CInt)
 
@@ -25,6 +17,8 @@ import qualified CoverArtArchive as CAA
 import CoverArtArchive.Types (JPEG(JPEG))
 import Music.MPD.AlbumArt.Event.SystemChange (SystemChangeEvent)
 import qualified Music.MPD.AlbumArt.Event.SystemChange as SystemChange
+
+import Protolude hiding (get)
 
 title :: Text
 -- TODO: change

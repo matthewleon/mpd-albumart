@@ -28,6 +28,8 @@ import CoverArtArchive.Errors
 import Music.MusicBrainz.Types (MBID)
 import qualified Music.MusicBrainz.Types as MBID
 
+import Protolude
+
 defaultBaseUrl :: BaseUrl
 defaultBaseUrl  = BaseUrl Https "coverartarchive.org" 443 ""
 
