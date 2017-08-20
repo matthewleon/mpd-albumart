@@ -18,7 +18,7 @@ import CoverArtArchive.Types (JPEG(JPEG))
 import Music.MPD.AlbumArt.Event.SystemChange (SystemChangeEvent)
 import qualified Music.MPD.AlbumArt.Event.SystemChange as SystemChange
 
-import Logging (LogLevel(Debug), setLogLevel, info)
+import Logging (LogLevel(Debug), setLogLevel, info, debug)
 import Protolude hiding (get)
 
 title :: Text
@@ -95,15 +95,15 @@ update renderer maybeWatch (JPEG cover) = do
 
 getCover :: IO JPEG
 getCover = do
-  info "querying mpd for current song"
+  debug "querying mpd for current song"
   song <- throwOnNothing "no current song" =<< withMPD' currentSong
-  info $ "current song: " <> show song
-  info "fetching mbid"
+  debug $ "current song: " <> show song
+  debug "fetching mbid"
   mbid <- throwOnNothing "unable to find mbid for song" =<< searchSong song
-  info $ "mbid: " <> show mbid
-  info "fetching art"
+  debug $ "mbid: " <> show mbid
+  debug "fetching art"
   jpeg <- throwOnLeft "unable to get album art for mbid" =<< CAA.getFront mbid
-  info "fetched art"
+  debug "fetched art"
   pure jpeg
   where
     throwOnNothing str = maybe (throwString str) return
