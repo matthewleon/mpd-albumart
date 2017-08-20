@@ -61,10 +61,8 @@ someFunc = initializeAll >> SystemChange.register >>= \case
       setHintWithPriority OverridePriority HintRenderScaleQuality ScaleLinear
       window <- createWindow title windowConfig
       renderer <- createRenderer window (-1) defaultRenderer
-      -- TODO: move add/remove of resizeWatch into update code
-      --addEventWatch $ resizeWatch renderer texture
-      update renderer
-      appLoop renderer getSystemChangeEvent
+      watch <- update renderer Nothing
+      appLoop renderer watch getSystemChangeEvent
 
 mpdThread :: (SystemChangeEvent -> IO EventPushResult) -> IO ()
 mpdThread push = go
@@ -75,26 +73,29 @@ mpdThread push = go
       EventPushFiltered -> throwString "System change event filtered."
       EventPushFailure s -> throwString $ T.unpack s
 
-appLoop :: Renderer -> (Event -> IO (Maybe SystemChangeEvent)) -> IO ()
-appLoop renderer getSystemChangeEvent = waitEvent >>= go
+appLoop :: Renderer -> EventWatch -> (Event -> IO (Maybe SystemChangeEvent)) -> IO ()
+appLoop renderer watch getSystemChangeEvent = waitEvent >>= go watch
   where
-  go :: Event -> IO ()
-  go ev = case eventPayload ev of
+  go :: EventWatch -> Event -> IO ()
+  go watch ev = case eventPayload ev of
      KeyboardEvent keyboardEvent
        |  keyboardEventKeyMotion keyboardEvent == Pressed &&
           keysymKeycode (keyboardEventKeysym keyboardEvent) == KeycodeQ
        -> return ()
-     _ -> do
+     _ ->
       getSystemChangeEvent ev >>= \case
-        Just systemChangeEvent -> update renderer
-        Nothing -> return ()
-      waitEvent >>= go
+        Just systemChangeEvent -> do
+          watch' <- update renderer (Just watch)
+          waitEvent >>= go watch'
+        Nothing -> waitEvent >>= go watch
 
-update :: Renderer -> IO ()
-update renderer = do
+update :: Renderer -> Maybe EventWatch -> IO EventWatch
+update renderer maybeWatch = do
   JPEG coverJpeg <- getCover
   texture <- decodeTexture renderer coverJpeg
   draw renderer texture
+  maybe (pure ()) delEventWatch maybeWatch
+  addEventWatch $ resizeWatch renderer texture
 
 getCover :: IO JPEG
 getCover = do
