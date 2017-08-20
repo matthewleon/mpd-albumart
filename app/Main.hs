@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE TupleSections #-}
 
 module Main (main) where
 
@@ -49,10 +50,10 @@ main :: IO ()
 main = do
   setLogLevel Debug
   info "starting"
-  getCurrentSongCover >>= initSystems
+  getCurrentSongCover Nothing >>= initSystems
 
-initSystems :: JPEG -> IO ()
-initSystems initJpeg =
+initSystems :: (Song, JPEG) -> IO ()
+initSystems initSongCover@(_, initJpeg) =
   initializeAll >> SystemChange.register >>= \case
     Nothing -> throwString "Unable to register user event with SDL."
     Just (RegisteredEventType pushSystemChangeEvent getSystemChangeEvent) -> do
@@ -63,7 +64,7 @@ initSystems initJpeg =
       window <- createWindow title windowConfig
       renderer <- createRenderer window (-1) defaultRenderer
       watch <- update renderer Nothing initJpeg
-      appLoop renderer watch getSystemChangeEvent
+      appLoop renderer watch getSystemChangeEvent initSongCover
 
 mpdThread :: (SystemChangeEvent -> IO EventPushResult) -> IO ()
 mpdThread push = go
@@ -74,11 +75,12 @@ mpdThread push = go
       EventPushFiltered -> throwString "System change event filtered."
       EventPushFailure s -> throwString $ T.unpack s
 
-appLoop :: Renderer -> EventWatch -> (Event -> IO (Maybe SystemChangeEvent)) -> IO ()
-appLoop renderer watch getSystemChangeEvent = waitEvent >>= go watch
+appLoop :: Renderer -> EventWatch -> (Event -> IO (Maybe SystemChangeEvent)) -> (Song, JPEG) -> IO ()
+appLoop renderer watch getSystemChangeEvent initSongCover =
+  waitEvent >>= go watch initSongCover
   where
-  go :: EventWatch -> Event -> IO ()
-  go watch ev = case eventPayload ev of
+  go :: EventWatch -> (Song, JPEG) -> Event -> IO ()
+  go watch previousSongCover ev = case eventPayload ev of
      KeyboardEvent keyboardEvent
        |  keyboardEventKeyMotion keyboardEvent == Pressed &&
           keysymKeycode (keyboardEventKeysym keyboardEvent) == KeycodeQ
@@ -86,9 +88,10 @@ appLoop renderer watch getSystemChangeEvent = waitEvent >>= go watch
      _ ->
       getSystemChangeEvent ev >>= \case
         Just systemChangeEvent -> do
-          watch' <- update renderer (Just watch) =<< getCurrentSongCover
-          waitEvent >>= go watch'
-        Nothing -> waitEvent >>= go watch
+          songCover <- getCurrentSongCover $ Just previousSongCover
+          watch' <- update renderer (Just watch) $ snd songCover
+          waitEvent >>= go watch songCover
+        Nothing -> waitEvent >>= go watch previousSongCover
 
 update :: Renderer -> Maybe EventWatch -> JPEG -> IO EventWatch
 update renderer maybeWatch (JPEG cover) = do
@@ -97,8 +100,14 @@ update renderer maybeWatch (JPEG cover) = do
   maybe (pure ()) delEventWatch maybeWatch
   addEventWatch $ resizeWatch renderer texture
 
-getCurrentSongCover :: IO JPEG
-getCurrentSongCover = getCurrentSong >>= getCover
+getCurrentSongCover :: Maybe (Song, JPEG) -> IO (Song, JPEG)
+getCurrentSongCover maybePrevious = do
+  currentSong <- getCurrentSong
+  case maybePrevious of
+    Just previous@(previousSong, _)
+      |  previousSong == currentSong
+      -> pure previous
+    _ -> (currentSong,) <$> getCover currentSong
 
 getCurrentSong :: IO Song
 getCurrentSong = do
