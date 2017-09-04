@@ -39,7 +39,7 @@ packages:
 - '.'
 - location:
     git: https://github.com/matthewleon/libmpd-haskell.git
-    commit: 35b282cbe5973113f7e199c0f0077444dc8edc5e
+    commit: 49b3b0ab17f286b3738a4184a1988647e0e4649e
   extra-dep: true
 
 # Dependency packages to be pulled from upstream that are not in the resolver

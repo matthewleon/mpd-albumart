@@ -21,6 +21,7 @@ executable mpd-albumart
                      , CoverArtArchive.Internal
                      , CoverArtArchive.Types
                      , Logging
+                     , MPDClient
                      , Music.MusicBrainz
                      , Music.MusicBrainz.Types
                      , Music.MusicBrainz.WebService
@@ -31,23 +32,27 @@ executable mpd-albumart
                      , bytestring
                      , conduit
                      , conduit-extra
+                     , containers
                      , http-client-tls
                      , http-conduit
                      , http-media
                      , http-types
                      , libmpd
+                     , lifted-async
                      , monad-control
+                     , mtl
                      , network-uri
                      , protolude
                      , resourcet
+                     , safe
+                     , safe-exceptions
                      , sdl2
                      , sdl2-image
+                     , stm
                      , servant
                      , servant-client
                      , text
-                     , containers
-                     , safe
-                     , safe-exceptions
+                     , transformers-base
                      , uuid-types
                      , xml-conduit
                      , xml-types
